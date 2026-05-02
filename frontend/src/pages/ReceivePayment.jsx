@@ -308,24 +308,25 @@ const ReceivePayment = () => {
                         className="flex-1 flex flex-col items-center"
                     >
                         <div className="w-full flex rounded-xl p-1 bg-white/5 border border-white/10 mb-8">
-                            <button 
-                                onClick={() => setActiveTab('SCAN')}
-                                className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'SCAN' ? 'bg-accent-cyan text-[#0a0f1e]' : 'text-secondary hover:text-white'}`}
-                            >
-                                <Camera size={16} /> Scan QR
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('NEARBY')}
-                                className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'NEARBY' ? 'bg-accent-cyan text-[#0a0f1e]' : 'text-secondary hover:text-white'}`}
-                            >
-                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 12-8.5 8.5c-1.3 1.3-3.3 1.3-4.6 0a3.2 3.2 0 0 1 0-4.6L10.4 7.4"/><path d="m14.5 14.5 5.5-5.5"/><path d="m21.6 8.4-5.5-5.5c-1.3-1.3-3.3-1.3-4.6 0a3.2 3.2 0 0 0 0 4.6l3 3"/></svg> Nearby
-                            </button>
-                            <button 
-                                onClick={() => setActiveTab('PASTE')}
-                                className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === 'PASTE' ? 'bg-accent-cyan text-[#0a0f1e]' : 'text-secondary hover:text-white'}`}
-                            >
-                                <MessageSquare size={16} /> Paste Token
-                            </button>
+                            {[
+                                { id: 'SCAN', label: 'Scan QR', icon: <Camera size={16} /> },
+                                { id: 'NEARBY', label: 'Nearby', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m15 12-8.5 8.5c-1.3 1.3-3.3 1.3-4.6 0a3.2 3.2 0 0 1 0-4.6L10.4 7.4"/><path d="m14.5 14.5 5.5-5.5"/><path d="m21.6 8.4-5.5-5.5c-1.3-1.3-3.3-1.3-4.6 0a3.2 3.2 0 0 0 0 4.6l3 3"/></svg> },
+                                { id: 'PASTE', label: 'Paste Token', icon: <MessageSquare size={16} /> }
+                            ].map(tab => (
+                                <motion.button 
+                                    key={tab.id}
+                                    onClick={() => setActiveTab(tab.id)}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                        activeTab === tab.id 
+                                        ? 'bg-white text-[#0a0f1e] shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
+                                        : 'text-secondary hover:text-white'
+                                    }`}
+                                >
+                                    {tab.icon} {tab.label}
+                                </motion.button>
+                            ))}
                         </div>
 
                         {activeTab === 'SCAN' ? (

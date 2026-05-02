@@ -489,16 +489,22 @@ const SendPayment = () => {
                     >
                         <div className="w-full flex rounded-xl p-1 bg-white/5 border border-white/10 mb-8">
                             {['QR', 'SCAN', 'NEARBY'].map(tab => (
-                                <button 
+                                <motion.button 
                                     key={tab}
                                     onClick={() => {
                                         setActiveTab(tab);
                                         if (tab === 'NEARBY' && rtcStatus === 'IDLE') startNearby();
                                     }}
-                                    className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-colors ${activeTab === tab ? 'bg-accent-cyan text-[#0a0f1e]' : 'text-secondary hover:text-white'}`}
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                    className={`flex-1 py-3 flex items-center justify-center gap-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+                                        activeTab === tab 
+                                        ? 'bg-white text-[#0a0f1e] shadow-[0_0_20px_rgba(255,255,255,0.2)]' 
+                                        : 'text-secondary hover:text-white'
+                                    }`}
                                 >
                                     {tab}
-                                </button>
+                                </motion.button>
                             ))}
                         </div>
 

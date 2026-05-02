@@ -108,7 +108,7 @@ const SecuritySettings = () => {
                         <button 
                             onClick={registerBiometric}
                             disabled={biometricEnabled}
-                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${biometricEnabled ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-accent-cyan text-[#0a0f1e]'}`}
+                            className={`px-4 py-2 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all ${biometricEnabled ? 'bg-green-500/10 text-green-400 border border-green-500/20' : 'bg-white text-[#0a0f1e] shadow-[0_0_15px_rgba(255,255,255,0.2)]'}`}
                         >
                             {biometricEnabled ? 'Active' : 'Enable'}
                         </button>

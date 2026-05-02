@@ -5,12 +5,12 @@ const dotenv = require('dotenv');
 // Load environment variables
 dotenv.config();
 
-const authRoutes = require('./routes/auth');
-const transactionRoutes = require('./routes/transactions');
-const walletRoutes = require('./routes/wallet');
-const syncRoutes = require('./routes/sync');
-const merchantRoutes = require('./routes/merchant');
-const webhookRoutes = require('./routes/webhooks');
+// const authRoutes = require('./routes/auth');
+// const transactionRoutes = require('./routes/transactions');
+// const walletRoutes = require('./routes/wallet');
+// const syncRoutes = require('./routes/sync');
+// const merchantRoutes = require('./routes/merchant');
+// const webhookRoutes = require('./routes/webhooks');
 
 const app = express();
 const PORT = process.env.PORT || 5005;
@@ -19,16 +19,16 @@ const PORT = process.env.PORT || 5005;
 app.use(cors());
 
 // Razorpay Webhook needs raw body - mount before express.json()
-app.use('/api/webhooks', webhookRoutes);
+// app.use('/api/webhooks', webhookRoutes);
 
 app.use(express.json());
 
 // Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/transactions', transactionRoutes);
-app.use('/api/sync', syncRoutes);
-app.use('/api/wallet', walletRoutes);
-app.use('/api/merchant', merchantRoutes);
+// app.use('/api/auth', authRoutes);
+// app.use('/api/transactions', transactionRoutes);
+// app.use('/api/sync', syncRoutes);
+// app.use('/api/wallet', walletRoutes);
+// app.use('/api/merchant', merchantRoutes);
 
 // Root Route
 app.get('/', (req, res) => {

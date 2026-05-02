@@ -172,13 +172,19 @@ const TransactionHistory = () => {
                 <div className="space-y-4 mb-6">
                     <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
                         {['ALL', 'SENT', 'RECEIVED', 'PENDING', 'FAILED'].map(tab => (
-                            <button 
+                            <motion.button 
                                 key={tab} 
                                 onClick={() => setFilterTab(tab)}
-                                className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all ${filterTab === tab ? 'bg-accent-cyan text-[#0a0f1e] shadow-[0_0_15px_rgba(0,245,255,0.3)]' : 'glass-card text-secondary hover:text-white'}`}
+                                whileHover={{ scale: 1.05, filter: 'brightness(1.2)' }}
+                                whileTap={{ scale: 0.95 }}
+                                className={`px-5 py-2.5 rounded-full text-[10px] font-black uppercase tracking-widest whitespace-nowrap transition-all duration-300 ${
+                                    filterTab === tab 
+                                    ? 'bg-gradient-to-r from-accent-cyan to-blue-500 text-[#0a0f1e] shadow-[0_0_20px_rgba(0,245,255,0.4)] border-2 border-accent-cyan/50' 
+                                    : 'bg-white/5 text-secondary hover:text-white border border-white/5'
+                                }`}
                             >
                                 {tab}
-                            </button>
+                            </motion.button>
                         ))}
                     </div>
                     
@@ -192,13 +198,13 @@ const TransactionHistory = () => {
                             />
                         </div>
                         <select 
-                            className="bg-white/5 border border-white/10 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none text-white focus:border-accent-cyan appearance-none"
+                            className="bg-[#0a0f1e] border border-white/10 rounded-2xl px-4 py-3 text-[10px] font-black uppercase tracking-widest outline-none text-white focus:border-accent-cyan appearance-none"
                             value={dateFilter} onChange={(e) => setDateFilter(e.target.value)}
                         >
-                            <option value="ALL_TIME">All Time</option>
-                            <option value="TODAY">Today</option>
-                            <option value="THIS_WEEK">This Week</option>
-                            <option value="THIS_MONTH">This Month</option>
+                            <option value="ALL_TIME" className="bg-[#0a0f1e] text-white">All Time</option>
+                            <option value="TODAY" className="bg-[#0a0f1e] text-white">Today</option>
+                            <option value="THIS_WEEK" className="bg-[#0a0f1e] text-white">This Week</option>
+                            <option value="THIS_MONTH" className="bg-[#0a0f1e] text-white">This Month</option>
                         </select>
                     </div>
                 </div>

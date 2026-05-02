@@ -45,13 +45,19 @@ const MerchantAnalytics = () => {
 
             <div className="flex gap-2 mb-8 bg-white/5 p-1 rounded-xl">
                 {['TODAY', 'WEEKLY', 'MONTHLY'].map(p => (
-                    <button 
+                    <motion.button 
                         key={p} 
                         onClick={() => setPeriod(p)}
-                        className={`flex-1 py-2 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all ${period === p ? 'bg-accent-purple text-white shadow-lg shadow-purple-500/20' : 'text-secondary hover:text-white'}`}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className={`flex-1 py-3 text-[10px] font-black uppercase tracking-widest rounded-lg transition-all duration-300 ${
+                            period === p 
+                            ? 'bg-gradient-to-r from-accent-purple to-purple-600 text-white shadow-[0_0_20px_rgba(157,78,221,0.4)]' 
+                            : 'text-secondary hover:text-white'
+                        }`}
                     >
                         {p}
-                    </button>
+                    </motion.button>
                 ))}
             </div>
 

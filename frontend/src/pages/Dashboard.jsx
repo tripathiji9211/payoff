@@ -6,7 +6,8 @@ import {
     Wallet, Send, QrCode, History, RefreshCcw, Bell, User, 
     ArrowUpRight, ArrowDownLeft, CheckCircle2, Clock, AlertCircle, 
     LogOut, WifiOff, Wifi, Award, Trash2, Users, Monitor,
-    X, PlayCircle, Fingerprint, Lock, Zap, Shield, Store
+    X, PlayCircle, Fingerprint, Lock, Zap, Shield, Store, Sparkles,
+    Globe
 } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -34,6 +35,8 @@ const CustomerDashboard = ({
     strokeDashoffset, unreadCount, getTimeAgo, getStatusIcon, getNotifIcon, 
     groupedNotifications, handleNotifClick 
 }) => {
+    const [lang, setLang] = useState('EN');
+    const [showLangSelector, setShowLangSelector] = useState(false);
     const [isBalanceHidden, setIsBalanceHidden] = useState(false);
     const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
@@ -75,7 +78,7 @@ const CustomerDashboard = ({
                 <div className="flex items-center gap-4">
                     {!isDemoActive && (
                         <div className="flex flex-col gap-1">
-                            <button onClick={startDemo} className="flex items-center gap-1 px-2 py-1 bg-accent-cyan/10 border border-accent-cyan/20 rounded-md text-[8px] font-black uppercase tracking-widest text-accent-cyan hover:bg-accent-cyan hover:text-[#0a0f1e] transition-colors">
+                            <button onClick={startDemo} className="flex items-center gap-1 px-2 py-1 bg-accent-cyan/10 border border-accent-cyan/20 rounded-md text-[8px] font-black uppercase tracking-widest text-accent-cyan hover:bg-white hover:text-[#0a0f1e] hover:shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all duration-300">
                                 <PlayCircle size={10} /> DEMO
                             </button>
                             <Link to="/split-demo" className="hidden lg:flex items-center gap-1 px-2 py-1 bg-white/5 border border-white/10 rounded-md text-[8px] font-black uppercase tracking-widest text-secondary hover:text-white transition-colors">
@@ -83,19 +86,41 @@ const CustomerDashboard = ({
                             </Link>
                         </div>
                     )}
-                    <button onClick={logout} className="text-secondary hover:text-red-400 transition-colors p-1" title="End Session">
-                        <LogOut size={18} />
-                    </button>
-                    {/* Online/Offline Indicator */}
-                    <div className="group relative">
-                        <div className={`w-3 h-3 rounded-full ${
-                            isSyncing ? 'bg-accent-yellow animate-pulse' : 
-                            isOnline ? 'bg-green-500 shadow-[0_0_10px_rgba(34,197,94,0.5)] animate-pulse' : 
-                            'bg-red-500 shadow-[0_0_10px_rgba(239,68,68,0.5)] animate-pulse'
-                        }`}></div>
-                        <div className="absolute top-full mt-2 right-0 bg-black/80 backdrop-blur-md border border-white/10 px-3 py-1.5 rounded-lg text-[8px] uppercase font-bold tracking-widest text-white whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-50">
-                            {isSyncing ? 'Synchronizing Vault...' : isOnline ? 'Network Connected' : 'Offline Mode Active'}
-                        </div>
+                    {/* Language Selector */}
+                    <div className="relative flex items-center">
+                        <button 
+                            onClick={() => setShowLangSelector(!showLangSelector)}
+                            className={`flex items-center bg-white/5 border border-white/10 rounded-lg px-3 py-2 cursor-pointer hover:bg-white/10 transition-all duration-300 ${showLangSelector ? 'ring-1 ring-accent-cyan/30' : ''}`}
+                        >
+                            <span className={`text-[10px] font-black transition-all ${showLangSelector ? 'text-accent-cyan' : 'text-white'}`}>
+                                {lang}
+                            </span>
+                        </button>
+                        
+                        <AnimatePresence>
+                            {showLangSelector && (
+                                <motion.div 
+                                    initial={{ opacity: 0, y: -5 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -5 }}
+                                    className="absolute top-full mt-2 left-0 min-w-[48px] flex flex-col gap-1 p-1 rounded-lg bg-[#0a0f1e]/95 backdrop-blur-xl border border-white/10 shadow-2xl z-[60]"
+                                >
+                                    {['EN', 'HI', 'KN'].filter(l => l !== lang).map(l => (
+                                        <button 
+                                            key={l}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                setLang(l);
+                                                setShowLangSelector(false);
+                                            }}
+                                            className="w-full px-3 py-2 text-[9px] font-bold text-white/30 hover:text-white hover:bg-white/5 rounded transition-all text-center"
+                                        >
+                                            {l}
+                                        </button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     {/* Notification Bell */}
@@ -241,6 +266,82 @@ const CustomerDashboard = ({
                     Protocol Encryption: AES-256-GCM
                 </div>
             </motion.div>
+
+            {/* KYC Banner */}
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="glass-card p-4 mb-8 border-accent-cyan/10 flex items-center justify-between group cursor-pointer hover:bg-white/5 transition-all duration-300"
+            >
+                <div className="flex items-center gap-4">
+                    <div className="w-11 h-11 rounded-xl bg-accent-cyan/10 flex items-center justify-center text-accent-cyan shadow-[0_0_15px_rgba(0,245,255,0.1)] group-hover:scale-110 transition-transform">
+                        <Shield size={20} />
+                    </div>
+                    <div>
+                        <h3 className="text-sm font-black uppercase italic tracking-tighter text-white">KYC Required</h3>
+                        <p className="text-[9px] text-secondary font-black uppercase tracking-widest mt-0.5">Verify identity for ₹10k limit</p>
+                    </div>
+                </div>
+                <button className="px-5 py-2 rounded-lg bg-white/5 border border-white/10 text-[9px] font-black uppercase tracking-widest hover:bg-white hover:text-[#0a0f1e] transition-all shadow-lg">
+                    Start
+                </button>
+            </motion.div>
+
+            {/* AI Smart Insights */}
+            <div className="mb-10">
+                <div className="flex items-center justify-between mb-5 px-2">
+                    <div className="flex items-center gap-3">
+                        <div className="p-1.5 rounded-lg bg-accent-cyan/10">
+                            <Sparkles size={14} className="text-accent-cyan" />
+                        </div>
+                        <h3 className="text-[9px] font-black uppercase tracking-[0.3em] text-secondary">AI Smart Insights</h3>
+                    </div>
+                    <button className="p-2 rounded-full hover:bg-white/5 transition-colors text-secondary hover:text-white">
+                        <RefreshCcw size={12} />
+                    </button>
+                </div>
+
+                <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-6 px-6">
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        className="min-w-[240px] p-4 rounded-[1.5rem] bg-white/5 border border-white/5 relative overflow-hidden group cursor-pointer"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-accent-cyan/5 blur-3xl -mr-12 -mt-12 group-hover:bg-accent-cyan/10 transition-colors"></div>
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="p-3 rounded-xl bg-orange-500/10 text-orange-500 shadow-lg shadow-orange-500/5">
+                                <Zap size={18} fill="currentColor" />
+                            </div>
+                            <p className="text-xs font-bold leading-relaxed text-white/90 pr-4">
+                                Balance trend is up 12% vs last week.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-accent-cyan group-hover:gap-2 transition-all">
+                            Tip <ArrowUpRight size={12} />
+                        </div>
+                        <button className="absolute top-3 right-3 text-white/10 hover:text-white/40 transition-colors">
+                            <X size={12} />
+                        </button>
+                    </motion.div>
+
+                    <motion.div 
+                        whileHover={{ y: -5 }}
+                        className="min-w-[240px] p-4 rounded-[1.5rem] bg-white/5 border border-white/5 relative overflow-hidden group cursor-pointer"
+                    >
+                        <div className="absolute top-0 right-0 w-24 h-24 bg-accent-purple/5 blur-3xl -mr-12 -mt-12 group-hover:bg-accent-purple/10 transition-colors"></div>
+                        <div className="flex items-start gap-3 mb-4">
+                            <div className="p-3 rounded-xl bg-blue-500/10 text-blue-400 shadow-lg shadow-blue-500/5">
+                                <Shield size={18} fill="currentColor" />
+                            </div>
+                            <p className="text-xs font-bold leading-relaxed text-white/90 pr-4">
+                                Next trust points milestone: 75 points.
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-1 text-[9px] font-black uppercase tracking-widest text-accent-purple group-hover:gap-2 transition-all">
+                            Goal <ArrowUpRight size={12} />
+                        </div>
+                    </motion.div>
+                </div>
+            </div>
 
             {/* Trust Score Ring */}
             <motion.div 
