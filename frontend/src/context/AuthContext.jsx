@@ -60,15 +60,36 @@ export const AuthProvider = ({ children }) => {
     }, []);
 
     const login = async (phone, pin) => {
+        const cleanPhone = String(phone || '').trim();
+        const cleanPin = String(pin || '').trim();
+        
+        console.log('[Auth] Login attempt for:', cleanPhone);
+        
         try {
-            const userData = await getData(STORES.USERS, phone);
-            if (!userData) {
-                return { success: false, message: 'User not found' };
+            // Check demo accounts first
+            const demoAccount = DEMO_ACCOUNTS.find(a => a.phone === cleanPhone);
+            
+            let userData;
+            if (demoAccount) {
+                console.log('[Auth] Found demo account');
+                userData = demoAccount;
+            } else {
+                userData = await getData(STORES.USERS, cleanPhone);
+                console.log('[Auth] DB lookup result:', userData ? 'Found' : 'Not Found');
             }
 
-            const hash = CryptoJS.SHA256(pin).toString();
+            if (!userData) {
+                return { success: false, message: 'User not registered on this device' };
+            }
+
+            const hash = CryptoJS.SHA256(cleanPin).toString();
+            console.log('[Auth] PIN Hash Comparison:', {
+                entered: hash.substring(0, 8) + '...',
+                stored: userData.pinHash.substring(0, 8) + '...'
+            });
+
             if (userData.pinHash !== hash) {
-                return { success: false, message: 'Wrong PIN' };
+                return { success: false, message: 'Invalid PIN' };
             }
 
             const sessionToken = CryptoJS.SHA256(Date.now().toString()).toString();
@@ -77,7 +98,8 @@ export const AuthProvider = ({ children }) => {
             setUser(userData);
             return { success: true };
         } catch (error) {
-            return { success: false, message: 'Login failed' };
+            console.error('[Auth] Login error:', error);
+            return { success: false, message: 'Vault access failed' };
         }
     };
 

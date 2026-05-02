@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import { QRCodeSVG } from 'qrcode.react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import CryptoJS from 'crypto-js';
 import LZString from 'lz-string';
 import { ChevronLeft, ArrowRight, CheckCircle2, Lock, Loader2, Delete, MessageSquare, AlertCircle, Copy, Share2 } from 'lucide-react';
@@ -33,6 +33,8 @@ const SendPayment = () => {
 
     const [suggestions, setSuggestions] = useState([]);
     const [isSuggestionsLoading, setIsSuggestionsLoading] = useState(false);
+    const scannerRef = useRef(null);
+    const answerScannerRef = useRef(null);
 
     // WebRTC State
     const [rtcStatus, setRtcStatus] = useState('IDLE'); // IDLE, SEARCHING, OFFER_READY, SCANNING_ANSWER, CONNECTING, CONNECTED, COMPLETE
@@ -89,72 +91,128 @@ const SendPayment = () => {
     };
 
     useEffect(() => {
-        if (activeTab === 'NEARBY' && rtcStatus === 'SCANNING_ANSWER') {
-            const scanner = new Html5QrcodeScanner('reader_answer', { 
-                fps: 30, 
-                qrbox: { width: 280, height: 280 },
-                aspectRatio: 1.0
-            });
-
-            scanner.render(onScanSuccess, (err) => {});
-
-            async function onScanSuccess(decodedText) {
+        let scanner;
+        const startAnswerScanner = async () => {
+            if (activeTab === 'NEARBY' && rtcStatus === 'SCANNING_ANSWER') {
                 try {
-                    const decompressed = LZString.decompressFromBase64(decodedText);
-                    const answer = JSON.parse(decompressed);
-                    if (answer.type === 'answer') {
-                        scanner.clear();
-                        setRtcStatus('CONNECTING');
-                        await rtcPeer.setRemoteDescription(new RTCSessionDescription(answer));
+                    scanner = new Html5Qrcode('reader_answer');
+                    answerScannerRef.current = scanner;
+
+                    const config = { 
+                        fps: 30, 
+                        qrbox: { width: 280, height: 280 },
+                        aspectRatio: 1.0
+                    };
+
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    const onScan = async (decodedText) => {
+                        try {
+                            const decompressed = LZString.decompressFromBase64(decodedText);
+                            const answer = JSON.parse(decompressed);
+                            if (answer.type === 'answer') {
+                                await scanner.stop();
+                                setRtcStatus('CONNECTING');
+                                await rtcPeer.setRemoteDescription(new RTCSessionDescription(answer));
+                            } else {
+                                toast.error('Invalid WebRTC Answer');
+                            }
+                        } catch (e) {
+                            toast.error('Could not parse Answer QR');
+                        }
+                    };
+
+                    if (isMobile) {
+                        try {
+                            await scanner.start({ facingMode: { exact: "environment" } }, config, onScan, () => {});
+                        } catch (e) {
+                            await scanner.start({ facingMode: "environment" }, config, onScan, () => {});
+                        }
                     } else {
-                        toast.error('Invalid WebRTC Answer');
+                        await scanner.start({ facingMode: "user" }, config, onScan, () => {});
                     }
-                } catch (e) {
-                    toast.error('Could not parse Answer QR');
+                } catch (err) {
+                    console.error("Answer Scanner failed", err);
                 }
             }
+        };
 
-            return () => {
-                scanner.clear().catch(e => {});
-            };
-        }
+        startAnswerScanner();
+
+        return () => {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().catch(e => {});
+            }
+        };
     }, [activeTab, rtcStatus, rtcPeer]);
 
     // SCAN TAB LOGIC
     useEffect(() => {
-        if (activeTab === 'SCAN' && step === 1) {
-            const scanner = new Html5QrcodeScanner('reader_merchant', { 
-                fps: 30, 
-                qrbox: { width: 250, height: 250 }
-            });
-
-            const onScan = (decodedText) => {
+        let scanner;
+        const startMerchantScanner = async () => {
+            if (activeTab === 'SCAN' && step === 1) {
                 try {
-                    // Try to parse as JSON (Bill QR)
-                    const data = JSON.parse(decodedText);
-                    if (data.encrypted || data.isBill) {
-                        setReceiver(data.receiverUpiId || '');
-                        if (data.amount) setAmount(data.amount.toString());
-                        setActiveTab('QR');
-                        toast.success('Bill Decoded');
-                        scanner.clear();
-                    }
-                } catch (e) {
-                    // It's a plain UPI ID (Static Merchant QR)
-                    if (decodedText.includes('@')) {
-                        setReceiver(decodedText);
-                        setActiveTab('QR'); 
-                        toast.success('Merchant Identified');
-                        scanner.clear();
-                    }
-                }
-            };
+                    scanner = new Html5Qrcode('reader_merchant');
+                    scannerRef.current = scanner;
 
-            scanner.render(onScan, () => {});
-            return () => {
-                scanner.clear().catch(() => {});
-            };
-        }
+                    const config = { 
+                        fps: 30, 
+                        qrbox: { width: 250, height: 250 },
+                        aspectRatio: 1.0
+                    };
+
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    const onScan = async (decodedText) => {
+                        try {
+                            const data = JSON.parse(decodedText);
+                            if (data.encrypted || data.isBill) {
+                                setReceiver(data.receiverUpiId || '');
+                                if (data.amount) setAmount(data.amount.toString());
+                                await scanner.stop();
+                                setActiveTab('QR');
+                                toast.success('Bill Decoded');
+                            } else {
+                                setReceiver(decodedText);
+                                await scanner.stop();
+                                setActiveTab('QR');
+                            }
+                        } catch (e) {
+                            setReceiver(decodedText);
+                            await scanner.stop();
+                            setActiveTab('QR');
+                        }
+                    };
+
+                    if (isMobile) {
+                        try {
+                            await scanner.start({ facingMode: { exact: "environment" } }, config, onScan, () => {});
+                            // Enable torch if mobile
+                            try {
+                                const track = scanner.getRunningTrack();
+                                if (track && track.getCapabilities().torch) {
+                                    await track.applyConstraints({ advanced: [{ torch: true }] });
+                                }
+                            } catch (e) {}
+                        } catch (e) {
+                            await scanner.start({ facingMode: "environment" }, config, onScan, () => {});
+                        }
+                    } else {
+                        await scanner.start({ facingMode: "user" }, config, onScan, () => {});
+                    }
+                } catch (err) {
+                    console.error("Merchant Scanner failed", err);
+                }
+            }
+        };
+
+        startMerchantScanner();
+
+        return () => {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().catch(e => {});
+            }
+        };
     }, [activeTab, step]);
 
     // DEMO MODE HOOKS
@@ -518,7 +576,42 @@ const SendPayment = () => {
                                         <div className="absolute inset-[60px] border-2 border-accent-cyan/20"></div>
                                     </div>
                                 </div>
-                                <p className="text-[10px] text-center text-secondary font-black uppercase tracking-widest">Scan Merchant QR or Bill to Auto-Fill</p>
+                                <div className="w-full">
+                                    <label className="w-full py-4 glass-card border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-accent-cyan/50 transition-all cursor-pointer">
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            className="hidden" 
+                                            onChange={async (e) => {
+                                                const file = e.target.files[0];
+                                                if (file && scannerRef.current) {
+                                                    try {
+                                                        const result = await scannerRef.current.scanFile(file, true);
+                                                        // Extract logic from onScan
+                                                        try {
+                                                            const data = JSON.parse(result);
+                                                            if (data.encrypted || data.isBill) {
+                                                                setReceiver(data.receiverUpiId || '');
+                                                                if (data.amount) setAmount(data.amount.toString());
+                                                                toast.success('Bill Decoded');
+                                                            } else {
+                                                                setReceiver(result);
+                                                            }
+                                                        } catch (e) {
+                                                            setReceiver(result);
+                                                        }
+                                                        setActiveTab('QR');
+                                                    } catch (err) {
+                                                        toast.error("No QR code found in image");
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-secondary group-hover:text-white transition-colors">Scan an Image File</span>
+                                    </label>
+                                </div>
+                                <p className="text-[10px] text-center text-secondary font-black uppercase tracking-widest mt-4">Scan Merchant QR or Bill to Auto-Fill</p>
+
                             </div>
                         ) : activeTab === 'QR' ? (
                             <>

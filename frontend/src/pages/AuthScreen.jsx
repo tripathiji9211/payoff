@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, User, ArrowRight, Phone, AtSign, Delete } from 'lucide-react';
+import { Shield, Lock, User, ArrowRight, Phone, AtSign, Delete, ChevronLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const AuthScreen = () => {
@@ -73,6 +73,8 @@ const AuthScreen = () => {
     }, [pin, view]);
 
     const submitLogin = async () => {
+        console.log('[AuthScreen] Submitting Login:', { phone, pinLength: pin.length });
+        
         if (lockoutTimer > 0) {
             toast.error(`Vault locked. Try again in ${lockoutTimer}s`);
             return;
@@ -92,7 +94,7 @@ const AuthScreen = () => {
                 setLockoutTimer(30);
                 toast.error('Security Lockout: 30 seconds');
             } else {
-                toast.error(`Wrong PIN. ${3 - newAttempts} attempts left`);
+                toast.error(res.message || 'Invalid PIN');
             }
         }
     };
@@ -152,8 +154,15 @@ const AuthScreen = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="w-full max-w-sm mx-auto"
+                        className="w-full max-w-sm mx-auto relative"
                     >
+                        <button 
+                            onClick={() => { setView('landing'); setStep(1); setPin(''); }}
+                            className="absolute -top-12 left-0 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-secondary hover:text-white transition-all active:scale-90"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
                         {step === 1 && (
                             <div className="space-y-6">
                                 <div className="text-center mb-10">
@@ -208,7 +217,7 @@ const AuthScreen = () => {
                                             }}
                                             className={`h-16 glass-card text-2xl font-black flex items-center justify-center border-white/5 ${num === 'DEL' ? 'text-red-400' : ''} ${num === '' ? 'opacity-0 pointer-events-none' : 'hover:bg-accent-cyan/10 active:scale-95 transition-all'}`}
                                         >
-                                            {num === 'DEL' ? <Delete size={24} /> : num}
+                                            {num === 'DEL' ? <Delete size={24} className="mx-auto" /> : num}
                                         </button>
                                     ))}
                                 </div>
@@ -225,8 +234,15 @@ const AuthScreen = () => {
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
-                        className="w-full max-w-sm mx-auto"
+                        className="w-full max-w-sm mx-auto relative"
                     >
+                        <button 
+                            onClick={() => { setView('landing'); setStep(1); setPin(''); setConfirmPin(''); }}
+                            className="absolute -top-12 left-0 w-10 h-10 rounded-full bg-white/5 border border-white/10 flex items-center justify-center text-secondary hover:text-white transition-all active:scale-90"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+
                         {step === 1 && (
                             <div className="space-y-4">
                                 <div className="text-center mb-8">
@@ -292,9 +308,9 @@ const AuthScreen = () => {
                                                 if (num === 'DEL') handleDelete();
                                                 else if (num !== '') handlePinClick(num.toString());
                                             }}
-                                            className={`h-14 glass-card text-xl font-black border-white/5 ${num === 'DEL' ? 'text-red-400' : ''} ${num === '' ? 'opacity-0 pointer-events-none' : 'hover:bg-accent-cyan/10 active:scale-95'}`}
+                                            className={`h-14 glass-card text-xl font-black flex items-center justify-center border-white/5 ${num === 'DEL' ? 'text-red-400' : ''} ${num === '' ? 'opacity-0 pointer-events-none' : 'hover:bg-accent-cyan/10 active:scale-95'}`}
                                         >
-                                            {num === 'DEL' ? <Delete size={20} /> : num}
+                                            {num === 'DEL' ? <Delete size={24} className="mx-auto" /> : num}
                                         </button>
                                     ))}
                                 </div>
@@ -304,7 +320,7 @@ const AuthScreen = () => {
                                     <button 
                                         onClick={() => setStep(3)} 
                                         disabled={pin.length !== 6}
-                                        className="btn-gradient flex-1 py-4 text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:grayscale"
+                                        className="btn-primary flex-1 py-4 text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:grayscale border border-white/10"
                                     >
                                         Next
                                     </button>
@@ -336,9 +352,9 @@ const AuthScreen = () => {
                                                 if (num === 'DEL') handleConfirmDelete();
                                                 else if (num !== '') handleConfirmPinClick(num.toString());
                                             }}
-                                            className={`h-14 glass-card text-xl font-black border-white/5 ${num === 'DEL' ? 'text-red-400' : ''} ${num === '' ? 'opacity-0 pointer-events-none' : 'hover:bg-accent-yellow/10 active:scale-95'}`}
+                                            className={`h-14 glass-card text-xl font-black flex items-center justify-center border-white/5 ${num === 'DEL' ? 'text-red-400' : ''} ${num === '' ? 'opacity-0 pointer-events-none' : 'hover:bg-accent-yellow/10 active:scale-95'}`}
                                         >
-                                            {num === 'DEL' ? <Delete size={20} /> : num}
+                                            {num === 'DEL' ? <Delete size={24} className="mx-auto" /> : num}
                                         </button>
                                     ))}
                                 </div>
@@ -348,7 +364,7 @@ const AuthScreen = () => {
                                     <button 
                                         onClick={submitRegister} 
                                         disabled={confirmPin.length !== 6}
-                                        className="btn-gradient flex-1 py-4 text-[10px] uppercase font-black tracking-widest disabled:opacity-30 disabled:grayscale shadow-[0_0_20px_rgba(0,245,255,0.2)]"
+                                        className="btn-primary flex-1 py-4 text-[10px] uppercase font-black tracking-widest disabled:opacity-50 disabled:grayscale border border-white/10 shadow-[0_0_20px_rgba(0,245,255,0.2)]"
                                     >
                                         Finalize
                                     </button>

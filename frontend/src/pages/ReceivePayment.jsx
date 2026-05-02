@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { Html5Qrcode } from 'html5-qrcode';
 import { useAuth } from '../context/AuthContext';
 import { useWallet } from '../context/WalletContext';
 import { getAllData, STORES } from '../services/db';
@@ -38,6 +38,9 @@ const ReceivePayment = () => {
 
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [fraudResult, setFraudResult] = useState(null);
+    const scannerRef = React.useRef(null);
+    const [isCameraActive, setIsCameraActive] = useState(false);
+    const [cameraError, setCameraError] = useState(null);
 
     // Split-Demo Broadcast Listener
     useEffect(() => {
@@ -86,79 +89,139 @@ const ReceivePayment = () => {
     }, [demoStep, isDemoActive]);
 
     useEffect(() => {
-        if (step === 1 && (activeTab === 'SCAN' || (activeTab === 'NEARBY' && rtcStatus === 'SCANNING'))) {
-            const scanner = new Html5QrcodeScanner('reader', { 
-                fps: 30, 
-                qrbox: { width: 280, height: 280 },
-                aspectRatio: 1.0
-            });
+        let scanner;
+        const startScanner = async () => {
+            if (step === 1 && (activeTab === 'SCAN' || (activeTab === 'NEARBY' && rtcStatus === 'SCANNING'))) {
+                const targetId = activeTab === 'SCAN' ? "reader" : "reader"; // Both use 'reader' div
+                
+                try {
+                    scanner = new Html5Qrcode(targetId);
+                    scannerRef.current = scanner;
 
-            scanner.render(onScanSuccess, (err) => {});
+                    const config = { 
+                        fps: 30, 
+                        qrbox: { width: 280, height: 280 },
+                        aspectRatio: 1.0
+                    };
 
-            async function onScanSuccess(decodedText) {
-                if (activeTab === 'SCAN') {
-                    try {
-                        const wrapper = JSON.parse(decodedText);
-                        if (wrapper.encrypted && wrapper.signature) {
-                            scanner.clear();
-                            setScannedWrapper(wrapper);
-                            setStep(2);
-                            toast.success('Protocol Signal Locked');
-                        } else {
-                            toast.error('Invalid Protocol Format');
-                        }
-                    } catch (e) {
-                        toast.error('Could not parse signal');
-                    }
-                } else if (activeTab === 'NEARBY') {
-                    try {
-                        const decompressed = LZString.decompressFromBase64(decodedText);
-                        const offer = JSON.parse(decompressed);
-                        
-                        if (offer.type === 'offer') {
-                            scanner.clear();
-                            setRtcStatus('GENERATING');
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+                    const handleScan = (decodedText) => {
+                        onScanSuccess(decodedText);
+                    };
+
+                    if (isMobile) {
+                        try {
+                            await scanner.start(
+                                { facingMode: { exact: "environment" } },
+                                config,
+                                handleScan,
+                                () => {}
+                            );
                             
-                            const pc = new RTCPeerConnection({ iceServers: [] });
-                            
-                            pc.ondatachannel = (event) => {
-                                const channel = event.channel;
-                                channel.onmessage = (e) => {
-                                    setRtcStatus('CONNECTED');
-                                    const data = JSON.parse(e.data);
-                                    if (data.encrypted && data.signature) {
-                                        setScannedWrapper(data);
-                                        toast.success('P2P Payload Received');
-                                        setStep(2);
-                                    }
-                                };
-                            };
-
-                            pc.onicecandidate = (e) => {
-                                if (!e.candidate) {
-                                    const answerSdp = LZString.compressToBase64(JSON.stringify(pc.localDescription));
-                                    setAnswerQr(answerSdp);
-                                    setRtcStatus('ANSWER_READY');
+                            // Enable Torch if supported
+                            try {
+                                const track = scanner.getRunningTrack();
+                                if (track && track.getCapabilities().torch) {
+                                    await track.applyConstraints({ advanced: [{ torch: true }] });
                                 }
-                            };
-
-                            await pc.setRemoteDescription(new RTCSessionDescription(offer));
-                            const answer = await pc.createAnswer();
-                            await pc.setLocalDescription(answer);
-                        } else {
-                            toast.error('Invalid WebRTC Offer');
+                            } catch (e) {
+                                console.log("Torch not supported", e);
+                            }
+                        } catch (err) {
+                            // Fallback if 'exact environment' fails
+                            await scanner.start(
+                                { facingMode: "environment" },
+                                config,
+                                handleScan,
+                                () => {}
+                            );
                         }
-                    } catch (e) {
-                        toast.error('Invalid Connection QR');
+                    } else {
+                        await scanner.start(
+                            { facingMode: "user" },
+                            config,
+                            handleScan,
+                            () => {}
+                        );
                     }
+                    setIsCameraActive(true);
+                    setCameraError(null);
+                } catch (err) {
+                    console.error("Camera access failed", err);
+                    setCameraError("Camera access denied or unavailable");
+                    setIsCameraActive(false);
                 }
             }
+        };
 
-            return () => {
-                scanner.clear().catch(e => {});
-            };
-        }
+        startScanner();
+
+        return () => {
+            if (scanner && scanner.isScanning) {
+                scanner.stop().catch(err => console.error("Error stopping scanner", err));
+            }
+        };
     }, [step, activeTab, rtcStatus]);
+
+    async function onScanSuccess(decodedText) {
+        if (activeTab === 'SCAN') {
+            try {
+                const wrapper = JSON.parse(decodedText);
+                if (wrapper.encrypted && wrapper.signature) {
+                    if (scannerRef.current) scannerRef.current.stop().catch(() => {});
+                    setScannedWrapper(wrapper);
+                    setStep(2);
+                    toast.success('Protocol Signal Locked');
+                } else {
+                    toast.error('Invalid Protocol Format');
+                }
+            } catch (e) {
+                toast.error('Could not parse signal');
+            }
+        } else if (activeTab === 'NEARBY') {
+            try {
+                const decompressed = LZString.decompressFromBase64(decodedText);
+                const offer = JSON.parse(decompressed);
+                
+                if (offer.type === 'offer') {
+                    if (scannerRef.current) scannerRef.current.stop().catch(() => {});
+                    setRtcStatus('GENERATING');
+                    
+                    const pc = new RTCPeerConnection({ iceServers: [] });
+                    
+                    pc.ondatachannel = (event) => {
+                        const channel = event.channel;
+                        channel.onmessage = (e) => {
+                            setRtcStatus('CONNECTED');
+                            const data = JSON.parse(e.data);
+                            if (data.encrypted && data.signature) {
+                                setScannedWrapper(data);
+                                toast.success('P2P Payload Received');
+                                setStep(2);
+                            }
+                        };
+                    };
+
+                    pc.onicecandidate = (e) => {
+                        if (!e.candidate) {
+                            const answerSdp = LZString.compressToBase64(JSON.stringify(pc.localDescription));
+                            setAnswerQr(answerSdp);
+                            setRtcStatus('ANSWER_READY');
+                        }
+                    };
+
+                    await pc.setRemoteDescription(new RTCSessionDescription(offer));
+                    const answer = await pc.createAnswer();
+                    await pc.setLocalDescription(answer);
+                } else {
+                    toast.error('Invalid WebRTC Offer');
+                }
+            } catch (e) {
+                toast.error('Invalid Connection QR');
+            }
+        }
+    }
 
     const handleVerifyPaste = () => {
         if (!pasteToken) {
@@ -343,9 +406,33 @@ const ReceivePayment = () => {
                                         <div className="absolute bottom-[55px] right-[55px] w-10 h-10 border-b-4 border-r-4 border-accent-cyan shadow-[0_0_20px_rgba(0,245,255,0.4)]"></div>
                                     </div>
                                 </div>
-                                <div className="flex items-center justify-center gap-2 text-accent-cyan mb-8">
+                                <div className="flex items-center justify-center gap-2 text-accent-cyan mb-4">
                                     <div className="w-2 h-2 rounded-full bg-accent-cyan animate-pulse"></div>
-                                    <span className="text-[10px] font-black uppercase tracking-widest">Point camera at payment QR</span>
+                                    <span className="text-[10px] font-black uppercase tracking-widest">
+                                        {cameraError ? cameraError : "Point camera at payment QR"}
+                                    </span>
+                                </div>
+
+                                <div className="w-full">
+                                    <label className="w-full py-4 glass-card border-white/10 flex flex-col items-center justify-center gap-2 hover:bg-white/5 hover:border-accent-cyan/50 transition-all cursor-pointer">
+                                        <input 
+                                            type="file" 
+                                            accept="image/*" 
+                                            className="hidden" 
+                                            onChange={async (e) => {
+                                                const file = e.target.files[0];
+                                                if (file && scannerRef.current) {
+                                                    try {
+                                                        const result = await scannerRef.current.scanFile(file, true);
+                                                        onScanSuccess(result);
+                                                    } catch (err) {
+                                                        toast.error("No QR code found in image");
+                                                    }
+                                                }
+                                            }}
+                                        />
+                                        <span className="text-[10px] font-black uppercase tracking-widest text-secondary group-hover:text-white transition-colors">Scan an Image File</span>
+                                    </label>
                                 </div>
                             </>
                         ) : activeTab === 'NEARBY' ? (

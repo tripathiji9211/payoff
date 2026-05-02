@@ -75,7 +75,7 @@ const CustomerDashboard = ({
                         </div>
                     </div>
                 </div>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-4 pr-14">
                     {!isDemoActive && (
                         <div className="flex flex-col gap-1">
                             <button onClick={startDemo} className="flex items-center gap-1 px-2 py-1 bg-accent-cyan/10 border border-accent-cyan/20 rounded-md text-[8px] font-black uppercase tracking-widest text-accent-cyan hover:bg-white hover:text-[#0a0f1e] hover:shadow-[0_0_15px_rgba(255,255,255,0.3)] transition-all duration-300">

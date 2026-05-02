@@ -26,12 +26,13 @@ const LockScreen = ({ children }) => {
     };
 
     useEffect(() => {
-        if (pin.length === 6) {
+        if (pin.length === 6 && !isVerifying) {
             submitPin();
         }
-    }, [pin]);
+    }, [pin, isVerifying]);
 
     const submitPin = async () => {
+        console.log('[LockScreen] Submitting PIN...');
         setIsVerifying(true);
         const success = await unlockWithPin(pin);
         if (!success) {

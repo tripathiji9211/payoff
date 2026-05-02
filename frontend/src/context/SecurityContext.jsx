@@ -148,8 +148,14 @@ export const SecurityProvider = ({ children }) => {
     };
 
     const unlockWithPin = async (pin) => {
+        console.log('[Security] Unlocking with PIN for user:', user?.phone);
         if (lockoutUntil && Date.now() < lockoutUntil) {
             toast.error(`Device locked. Try again in ${Math.ceil((lockoutUntil - Date.now()) / 1000)}s`);
+            return false;
+        }
+
+        if (!user?.phone) {
+            console.error('[Security] No user found for unlocking');
             return false;
         }
 

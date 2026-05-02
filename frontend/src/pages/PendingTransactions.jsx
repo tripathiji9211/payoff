@@ -136,7 +136,7 @@ const TransactionHistory = () => {
     return (
         <div className="flex-1 flex flex-col bg-[#0a0f1e] text-white min-h-screen relative overflow-hidden">
             <div className="p-6 pb-4">
-                <div className="flex items-center justify-between mb-8">
+                <div className="flex items-center justify-between mb-8 pr-14">
                     <div className="flex items-center gap-4">
                         <button onClick={() => navigate(-1)} className="w-10 h-10 rounded-full glass-card flex items-center justify-center border border-white/5">
                             <ChevronLeft size={20} />
